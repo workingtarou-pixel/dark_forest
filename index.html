@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="暗い森の中で光の欠片を集めて脱出する3Dサバイバルホラーゲーム" />
+  <title>DARK FOREST - 3D Horror Game</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/styles/index.css" />
+</head>
+<body>
+  <div id="game-container"></div>
+
+  <!-- Title Screen -->
+  <div id="title-screen" class="screen active">
+    <div class="title-content">
+      <h1 class="game-title">DARK FOREST</h1>
+      <p class="game-subtitle">闇の森から脱出せよ</p>
+      <div class="title-instructions">
+        <p>光の欠片を3つ集め、ポータルを作って脱出しろ</p>
+        <p class="warning-text">⚠ 森には何かが潜んでいる ⚠</p>
+      </div>
+      <div class="title-buttons">
+        <button id="start-button" class="menu-button">ソロプレイ</button>
+        <button id="multi-button" class="menu-button multi-btn">マルチプレイ</button>
+      </div>
+      <div class="controls-info">
+        <h3>操作方法</h3>
+        <div class="controls-grid">
+          <span class="key">W A S D</span><span>移動</span>
+          <span class="key">SHIFT</span><span>ダッシュ</span>
+          <span class="key">F</span><span>懐中電灯 ON/OFF</span>
+          <span class="key">1-5</span><span>アイテム使用</span>
+          <span class="key">R</span><span>アイテム拾う / ポータル入る</span>
+          <span class="key">Q</span><span>光の玉でポータル生成</span>
+          <span class="key">E</span><span>ポーズメニュー</span>
+          <span class="key">T</span><span>チャット</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lobby Screen -->
+  <div id="lobby-screen" class="screen hidden">
+    <div class="lobby-wrapper">
+      <h1 class="lobby-title">MULTIPLAYER</h1>
+      <div id="lobby-error" class="lobby-error hidden"></div>
+
+      <!-- Join/Create View -->
+      <div id="lobby-content">
+        <div class="lobby-field">
+          <label>サーバーURL</label>
+          <input type="text" id="server-url-input" placeholder="wss://your-app.onrender.com" value="wss://dark-forest-server.onrender.com" />
+        </div>
+        <div class="lobby-field">
+          <label>プレイヤーID（名前）</label>
+          <input type="text" id="player-name-input" placeholder="IDを入力" maxlength="16" />
+        </div>
+        <div class="lobby-section">
+          <h3>ルーム作成</h3>
+          <div class="lobby-field">
+            <label>パスワード（任意）</label>
+            <input type="text" id="room-password-input" placeholder="パスワード" maxlength="20" />
+          </div>
+          <button id="create-room-btn" class="menu-button">ルーム作成</button>
+        </div>
+        <div class="lobby-divider">または</div>
+        <div class="lobby-section">
+          <h3>ルーム参加</h3>
+          <div class="lobby-row">
+            <input type="text" id="join-room-id" placeholder="ルームID" maxlength="6" class="lobby-input-small" />
+            <input type="text" id="join-room-pw" placeholder="パスワード" maxlength="20" class="lobby-input-small" />
+          </div>
+          <button id="join-room-btn" class="menu-button">参加</button>
+        </div>
+      </div>
+
+      <!-- Room View -->
+      <div id="room-view" class="hidden">
+        <div class="room-id-box">ルームID: <span id="room-id-display" class="room-id-code"></span></div>
+        <div id="player-list" class="player-list"></div>
+        <div class="room-actions">
+          <button id="lobby-start-btn" class="menu-button" style="display:none">ゲーム開始</button>
+          <button id="leave-room-btn" class="menu-button leave-btn">退出</button>
+        </div>
+      </div>
+
+      <button id="lobby-back-btn" class="lobby-back">← タイトルに戻る</button>
+    </div>
+  </div>
+
+  <!-- HUD Overlay -->
+  <div id="hud" class="hidden">
+    <div id="health-container" class="hud-bar-container">
+      <div class="hud-bar-label">HP</div>
+      <div class="hud-bar"><div id="health-bar" class="hud-bar-fill health-fill"></div></div>
+    </div>
+    <div id="stamina-container" class="hud-bar-container">
+      <div class="hud-bar-label">STA</div>
+      <div class="hud-bar"><div id="stamina-bar" class="hud-bar-fill stamina-fill"></div></div>
+    </div>
+    <div id="battery-container" class="hud-bar-container">
+      <div class="hud-bar-label">🔦</div>
+      <div class="hud-bar"><div id="battery-bar" class="hud-bar-fill battery-fill"></div></div>
+    </div>
+    <div id="fragment-counter">
+      <span class="fragment-icon">✦</span>
+      <span id="fragment-count">0</span> / 3
+    </div>
+    <div id="item-slots">
+      <div class="item-slot" data-slot="0"><span class="slot-key">1</span><span class="slot-icon"></span><span class="slot-name"></span></div>
+      <div class="item-slot" data-slot="1"><span class="slot-key">2</span><span class="slot-icon"></span><span class="slot-name"></span></div>
+      <div class="item-slot" data-slot="2"><span class="slot-key">3</span><span class="slot-icon"></span><span class="slot-name"></span></div>
+      <div class="item-slot" data-slot="3"><span class="slot-key">4</span><span class="slot-icon"></span><span class="slot-name"></span></div>
+      <div class="item-slot" data-slot="4"><span class="slot-key">5</span><span class="slot-icon"></span><span class="slot-name"></span></div>
+    </div>
+    <div id="minimap-container"><canvas id="minimap" width="180" height="180"></canvas></div>
+    <div id="crosshair">+</div>
+    <div id="interaction-prompt" class="hidden">
+      <span class="key-prompt">R</span> <span id="prompt-text"></span>
+    </div>
+    <div id="status-effects"></div>
+    <div id="message-log"></div>
+
+    <!-- Spectator indicator -->
+    <div id="spectator-hud" class="hidden">
+      <div class="spectator-badge">👁 SPECTATOR</div>
+      <p class="spectator-hint">マウスで自由に見回せます</p>
+    </div>
+
+    <!-- Alive counter (multiplayer) -->
+    <div id="alive-counter" class="hidden">
+      <span id="alive-count">0</span> / <span id="total-players">0</span> 生存
+    </div>
+  </div>
+
+  <!-- Chat -->
+  <div id="chat-container" class="hidden">
+    <div id="chat-log"></div>
+    <div id="chat-input-box" class="hidden">
+      <input type="text" id="chat-input" placeholder="メッセージを入力..." maxlength="200" />
+    </div>
+  </div>
+
+  <!-- Jump Scare Overlay -->
+  <div id="jumpscare-overlay" class="hidden">
+    <canvas id="jumpscare-canvas"></canvas>
+  </div>
+
+  <!-- Game Over Screen -->
+  <div id="gameover-screen" class="screen hidden">
+    <div class="gameover-content">
+      <h1 class="gameover-title">DEAD</h1>
+      <p class="gameover-subtitle">闇に飲まれた...</p>
+      <button id="retry-button" class="menu-button">リトライ</button>
+    </div>
+  </div>
+
+  <!-- Victory Screen -->
+  <div id="victory-screen" class="screen hidden">
+    <div class="victory-content">
+      <h1 class="victory-title">ESCAPE</h1>
+      <p class="victory-subtitle">闇の森から脱出に成功した</p>
+      <button id="victory-retry-button" class="menu-button">もう一度プレイ</button>
+    </div>
+  </div>
+
+  <!-- Pause Menu -->
+  <div id="pause-screen" class="screen hidden">
+    <div class="pause-content">
+      <h1 class="pause-title">PAUSED</h1>
+      <div class="pause-settings">
+        <div class="setting-row">
+          <label for="brightness-slider">🔆 明るさ</label>
+          <input type="range" id="brightness-slider" min="30" max="250" value="100" />
+          <span id="brightness-value">100%</span>
+        </div>
+        <div class="setting-row">
+          <label for="volume-slider">🔊 音量</label>
+          <input type="range" id="volume-slider" min="0" max="100" value="60" />
+          <span id="volume-value">60%</span>
+        </div>
+      </div>
+      <button id="resume-button" class="menu-button">再開</button>
+      <p class="pause-hint">Eキーでも再開できます</p>
+    </div>
+  </div>
+
+  <div id="pointer-lock-prompt" class="hidden"><p>クリックでゲームに戻る</p></div>
+  <div id="damage-overlay"></div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
